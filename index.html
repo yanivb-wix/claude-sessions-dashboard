@@ -254,7 +254,8 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem("csd:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem("csd:" + k, JSON.stringify(v)); } catch {} },
 };
-let mode = store.get("mode", "project");
+const params = new URLSearchParams(location.search);
+let mode = params.get("group") || store.get("mode", "project");  // ?group=project|status|app|none
 let collapsed = new Set(store.get("collapsed", []));
 
 const ICON = {

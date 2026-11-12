@@ -1,0 +1,99 @@
+[
+  {
+    "pid": 51234, "sessionId": "8f3c2a10-1d4e-4b7a-9a61-2f0c5b7e9d01", "name": "acme-web-3f", "title": "Checkout page layout shift",
+    "cwd": "~/code/acme-web", "project": "~/code/acme-web", "kind": "interactive", "entrypoint": "cli", "status": "busy",
+    "startedAgoMin": 95, "activeAgoMin": 0, "alive": true, "tty": "ttys004", "headless": false, "attachTab": false,
+    "branch": "fix/WEB-1482-checkout-cls", "tickets": ["WEB-1482"], "prs": ["https://github.com/acme/acme-web/pull/2317"],
+    "firstPrompt": "The checkout page jumps when the promo banner loads. Find out what causes the layout shift and fix it.",
+    "asks": [
+      "Run the Lighthouse CI check again and compare CLS before and after",
+      "Also reserve space for the shipping estimate, it shifts on slow 3G",
+      "Open a PR with the fix and link WEB-1482"
+    ],
+    "lastReply": "The banner image had no intrinsic size, so the browser reserved 0px until it loaded. I added width/height attributes and an aspect-ratio fallback, and reserved a min-height for the shipping estimate. CLS on /checkout dropped from 0.31 to 0.02 in Lighthouse CI.",
+    "files": ["src/checkout/PromoBanner.tsx", "src/checkout/ShippingEstimate.tsx", "src/checkout/checkout.module.css", "lighthouserc.json"],
+    "turns": 7, "toolCalls": 48, "topTools": [["Bash", 21], ["Read", 14], ["Edit", 9], ["Grep", 4]]
+  },
+  {
+    "pid": 51877, "sessionId": "2b9e4c55-7a13-4f0e-8c2d-61a9e0f4b3c2", "name": "acme-web-a1", "title": "Upgrade to React 19",
+    "cwd": "~/code/acme-web", "project": "~/code/acme-web", "kind": "interactive", "entrypoint": "cli", "status": "idle",
+    "startedAgoMin": 1500, "activeAgoMin": 42, "alive": true, "tty": "ttys007", "headless": false, "attachTab": false,
+    "branch": "chore/react-19", "tickets": [], "prs": [],
+    "firstPrompt": "Plan the upgrade from React 18 to 19. List the breaking changes that affect this codebase before touching anything.",
+    "asks": [
+      "Go ahead with the codemods for the ref-as-prop change",
+      "Which tests still fail after the codemod?"
+    ],
+    "lastReply": "Three test files still fail, all in src/forms: they rely on the removed defaultProps for function components. I can move those defaults into parameter defaults; it is a mechanical change across 11 components.",
+    "files": ["package.json", "src/forms/TextField.tsx", "src/forms/Select.tsx"],
+    "turns": 5, "toolCalls": 31, "topTools": [["Bash", 15], ["Grep", 8], ["Edit", 6]]
+  },
+  {
+    "pid": 48120, "sessionId": "c41d7e92-0b5a-4e3f-a8d4-9e2f71c06a58", "name": "payments-api-7c", "title": "Idempotency keys for refunds",
+    "cwd": "~/code/payments-api", "project": "~/code/payments-api", "kind": "interactive", "entrypoint": "cli", "status": "idle",
+    "startedAgoMin": 320, "activeAgoMin": 18, "alive": true, "tty": "ttys011", "headless": false, "attachTab": false,
+    "branch": "feat/PAY-905-refund-idempotency", "tickets": ["PAY-905"], "prs": ["https://github.com/acme/payments-api/pull/688"],
+    "firstPrompt": "Refunds can be submitted twice when the client retries. Add idempotency-key support to POST /refunds.",
+    "asks": [
+      "Add a migration for the idempotency_keys table with a 24h TTL index",
+      "Write tests for concurrent duplicate requests",
+      "Push and update the PR description"
+    ],
+    "lastReply": "Pushed to PR #688. The description now covers the key format, the 24h retention, and the 409 response for a reused key with a different body. All 214 tests pass, including the new concurrency test that fires 20 parallel duplicates.",
+    "files": ["src/refunds/handler.ts", "src/middleware/idempotency.ts", "migrations/20261110_idempotency_keys.sql", "test/refunds.idempotency.test.ts"],
+    "turns": 9, "toolCalls": 63, "topTools": [["Bash", 27], ["Edit", 14], ["Read", 13], ["Write", 3]]
+  },
+  {
+    "pid": 47301, "sessionId": "e7a0f3b8-6c21-4d9e-b5f4-3a8c1e2d0f77", "name": "Nightly dependency audit", "title": "Nightly dependency audit",
+    "cwd": "~/code/payments-api", "project": "~/code/payments-api", "kind": "bg", "entrypoint": "cli", "status": "busy",
+    "startedAgoMin": 30, "activeAgoMin": 1, "alive": true, "tty": "ttys019", "headless": true, "attachTab": false, "jobId": "a83f12c0",
+    "branch": "main", "tickets": [], "prs": [],
+    "firstPrompt": "Audit dependencies for known vulnerabilities and open a PR for any safe patch-level upgrades.",
+    "asks": ["Audit dependencies for known vulnerabilities and open a PR for any safe patch-level upgrades."],
+    "lastReply": "Found 2 advisories: a moderate one in an XML parser (fixed in a patch release) and a low one in a dev-only test helper. Upgrading the parser now and running the full test suite before opening the PR.",
+    "files": ["package.json", "package-lock.json"],
+    "turns": 1, "toolCalls": 12, "topTools": [["Bash", 10], ["Read", 2]]
+  },
+  {
+    "pid": 39022, "sessionId": "9d2b6f41-3e8a-4c17-a0b9-5f6e2c8d1a34", "name": "infra-terraform-2d", "title": "Staging cluster autoscaling",
+    "cwd": "~/code/infra", "project": "~/code/infra", "kind": "interactive", "entrypoint": "cli", "status": "idle",
+    "startedAgoMin": 7300, "activeAgoMin": 5900, "alive": true, "tty": "ttys002", "headless": false, "attachTab": false,
+    "branch": "ops/OPS-311-staging-hpa", "tickets": ["OPS-311"], "prs": [],
+    "firstPrompt": "Staging pods get OOM-killed during load tests. Review the HPA and resource limits and suggest changes.",
+    "asks": ["Draft the terraform change but don't apply it"],
+    "lastReply": "Drafted the change in modules/k8s-app/hpa.tf: memory target 70%, max replicas 4 → 8, and the memory limit raised to 1Gi. Run terraform plan -target=module.api_staging to review it; nothing has been applied.",
+    "files": ["modules/k8s-app/hpa.tf", "envs/staging/api.tfvars"],
+    "turns": 3, "toolCalls": 19, "topTools": [["Read", 9], ["Bash", 6], ["Edit", 2]]
+  },
+  {
+    "pid": 44516, "sessionId": "5c8e1a27-9f40-4b6d-8e3a-7d2f0c9b4e61", "name": "Q4 roadmap summary", "title": "Q4 roadmap summary",
+    "cwd": "~/Library/Application Support/Claude/scratch", "project": "Claude Desktop · scratch", "kind": "interactive", "entrypoint": "claude-desktop",
+    "status": "idle", "startedAgoMin": 2900, "activeAgoMin": 260, "alive": true, "tty": null, "headless": false, "attachTab": false,
+    "hostSessionId": "local_5c8e1a27-9f40-4b6d-8e3a-7d2f0c9b4e61", "branch": "HEAD", "tickets": [], "prs": [],
+    "firstPrompt": "Summarize the attached roadmap doc into five bullets for the all-hands slide.",
+    "asks": ["Make the tone less formal and keep each bullet under 12 words"],
+    "lastReply": "Here's a lighter version: ship one-click checkout, halve page load on mobile, launch refunds self-service, move staging to autoscaling, and retire the legacy admin.",
+    "files": [], "turns": 2, "toolCalls": 1, "topTools": [["Read", 1]]
+  },
+  {
+    "pid": 44590, "sessionId": "0f6a3d58-2c71-4e9b-b4d2-8a1e5f7c3b90", "name": "Interview question bank", "title": "Interview question bank",
+    "cwd": "~/Library/Application Support/Claude/scratch", "project": "Claude Desktop · scratch", "kind": "interactive", "entrypoint": "claude-desktop",
+    "status": "idle", "startedAgoMin": 4400, "activeAgoMin": 4300, "alive": true, "tty": null, "headless": false, "attachTab": false,
+    "hostSessionId": "local_0f6a3d58-2c71-4e9b-b4d2-8a1e5f7c3b90", "branch": "HEAD", "tickets": [], "prs": [],
+    "firstPrompt": "Write ten system-design interview questions for a senior frontend role, with what a strong answer covers.",
+    "asks": ["Add two questions about performance budgets"],
+    "lastReply": "Added questions 11 and 12 on setting and enforcing performance budgets in CI, including what a strong answer says about trade-offs with product teams.",
+    "files": [], "turns": 2, "toolCalls": 0, "topTools": []
+  },
+  {
+    "pid": 36011, "sessionId": "a2e9c4f7-8b13-4d50-9c6e-1f3a7b2d8e05", "name": "acme-web-9e", "title": "Flaky e2e login test",
+    "cwd": "~/code/acme-web", "project": "~/code/acme-web", "kind": "interactive", "entrypoint": "cli", "status": "idle",
+    "startedAgoMin": 2800, "activeAgoMin": 1700, "alive": false, "tty": null, "headless": false, "attachTab": false,
+    "branch": "main", "tickets": ["WEB-1460"], "prs": [],
+    "firstPrompt": "The login e2e test fails about 1 in 10 runs on CI. Find the race.",
+    "asks": ["Make the wait condition explicit instead of the fixed timeout"],
+    "lastReply": "The test clicked Sign in before the auth SDK finished initializing. It now waits for the form's data-ready attribute; 200 consecutive CI runs passed.",
+    "files": ["e2e/login.spec.ts", "src/auth/LoginForm.tsx"],
+    "turns": 4, "toolCalls": 27, "topTools": [["Bash", 14], ["Read", 8], ["Edit", 5]]
+  }
+]

@@ -182,7 +182,22 @@ def project_of(cwd, entrypoint):
     return "~/" + rel if rel else "~"
 
 
+DEMO = "--demo" in sys.argv  # serve made-up sessions from demo/ (for screenshots); actions do nothing
+
+
+def demo_sessions():
+    now = time.time() * 1000
+    sessions = json.loads((HERE / "demo" / "sessions.json").read_text())
+    for s in sessions:
+        s["startedAt"] = now - s.pop("startedAgoMin") * 60_000
+        s["updatedAt"] = now - s.pop("activeAgoMin") * 60_000
+        s["lastPrompt"] = s["asks"][0] if s["asks"] else None
+    return sessions
+
+
 def load_sessions():
+    if DEMO:
+        return demo_sessions()
     sessions = []
     for f in sorted(SESSIONS_DIR.glob("*.json")):
         try:
@@ -421,10 +436,11 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
-        if self.path in ("/", "/index.html"):
+        path = self.path.split("?", 1)[0]
+        if path in ("/", "/index.html"):
             html = (HERE / "index.html").read_text().replace("__TOKEN__", TOKEN)
             self.send(200, html, "text/html; charset=utf-8")
-        elif self.path == "/api/sessions":
+        elif path == "/api/sessions":
             self.send(200, json.dumps(load_sessions()))
         else:
             self.send(404, '{"error":"not found"}')
@@ -439,7 +455,9 @@ class Handler(BaseHTTPRequestHandler):
         if not s:
             return self.send(404, '{"error":"session not found"}')
         try:
-            if parts[1] == "open":
+            if DEMO and parts[1] in ("open", "close"):
+                msg = f"Demo mode: would {parts[1]} {s['name']}"
+            elif parts[1] == "open":
                 msg = open_session(s)
             elif parts[1] == "close":
                 msg = close_session(s)
@@ -453,7 +471,7 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     url = f"http://127.0.0.1:{PORT}"
-    print(f"Claude sessions dashboard → {url}")
+    print(f"Claude sessions dashboard{' (demo data)' if DEMO else ''} → {url}")
     if "--no-open" not in sys.argv:
         subprocess.Popen(["open", url])
     srv.serve_forever()

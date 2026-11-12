@@ -12,6 +12,8 @@ A local, macOS-only web dashboard for every Claude session running on this machi
 |---|---|
 | `server.py` | Session discovery (`load_sessions`), transcript parsing (`summarize`), Orca/Desktop/terminal integration (`orca_handle`, `open_session`, `launch_in_terminal`), `close_session`, HTTP handler |
 | `index.html` | UI. `server.py` serves it with `__TOKEN__` replaced by the per-run CSRF token |
+| `demo/sessions.json` | Made-up sessions served by `--demo`. Times are `startedAgoMin`/`activeAgoMin`, converted to timestamps at request time |
+| `docs/*.png` | README screenshots, captured from demo mode (see below) |
 | `attach-tabs.json` | Runtime state: `{jobId: orcaTerminalHandle}` for tabs opened by Attach. Git-ignored, never commit it |
 
 ## Running and checking changes
@@ -27,6 +29,16 @@ python3 -c "import server, json; print(json.dumps(server.load_sessions()[:2], in
 python3 -c "import re;open('/tmp/page.js','w').write(re.search(r'<script>(.*)</script>',open('index.html').read(),re.S).group(1))" && node --check /tmp/page.js
 ```
 
+- **Demo mode** (`python3 server.py --demo`) serves `demo/sessions.json`, and Open/Close only return a toast. Use it for UI work and screenshots. **Never put real session content (internal tickets, site IDs, transcripts) in screenshots or the demo data.**
+- Regenerate the README screenshots from a demo server (`PORT=8790 python3 server.py --demo --no-open`). The `?group=` URL parameter picks the grouping:
+  ```sh
+  C="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  shot() { "$C" --headless=new --user-data-dir="/tmp/csd-shot-$1" --hide-scrollbars --force-device-scale-factor=2 \
+    --window-size=1440,1180 --virtual-time-budget=4000 $3 --screenshot="docs/$1.png" "http://127.0.0.1:8790/$2"; }
+  shot dashboard-light "?group=project"
+  shot dashboard-dark  "?group=project" --blink-settings=preferredColorScheme=0
+  shot dashboard-status "?group=status"
+  ```
 - There is no test suite. Verify by importing `server` and calling its functions, and by loading the page in a browser.
 - **The server must be restarted after editing `server.py`.** `index.html` is re-read on every request, so a page reload is enough for UI changes. The token changes on every restart, so an old open tab gets `403` on actions until it is reloaded.
 - **Do not click Open, Attach or Close on real sessions while testing.** Open steals focus or creates Orca tabs in the user's workspace, and Close kills the user's live sessions. Test the logic by calling the helpers (`orca_handle(s)`, `attach_running(job)` and so on) instead.
