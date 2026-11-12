@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Sessions</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    interpolate-size: allow-keywords;
+    --bg: #f5f4ef; --bg-2: #efede6; --surface: #ffffff; --surface-2: #faf9f6;
+    --border: #e6e3da; --border-strong: #d6d2c6; --text: #1d1c19; --muted: #6e6a61; --faint: #a19c90;
+    --accent: #c2541c; --accent-hover: #a9461530; --accent-soft: #fbeee5; --on-accent: #fff;
+    --ok: #1f8a4c; --ok-soft: #e4f3ea; --busy: #c27c0e; --busy-soft: #fcf1da;
+    --stale: #8a6d3b; --stale-soft: #f3ecdf; --dead: #7a7f88; --dead-soft: #eceef1;
+    --info: #2856d6; --info-soft: #e7edfd; --danger: #c22b2b; --danger-soft: #fce9e9;
+    --shadow-sm: 0 1px 2px rgb(30 25 10 / .05);
+    --shadow-md: 0 1px 2px rgb(30 25 10 / .04), 0 6px 18px -6px rgb(30 25 10 / .14);
+    --shadow-lg: 0 2px 4px rgb(30 25 10 / .05), 0 16px 36px -10px rgb(30 25 10 / .22);
+    --radius: 14px;
+    --ease: cubic-bezier(.2, .8, .2, 1);
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141311; --bg-2: #1a1916; --surface: #1e1d1a; --surface-2: #242320;
+      --border: #2f2d29; --border-strong: #3d3a35; --text: #eceae3; --muted: #a09c92; --faint: #6f6b63;
+      --accent: #f0864a; --accent-soft: #3a2519; --on-accent: #1b0f07;
+      --ok: #50d68a; --ok-soft: #16301f; --busy: #f5b942; --busy-soft: #382c12;
+      --stale: #c9a56b; --stale-soft: #2f281c; --dead: #9aa0aa; --dead-soft: #26282c;
+      --info: #8fb0ff; --info-soft: #1c2541; --danger: #ff7b7b; --danger-soft: #3a1b1b;
+      --shadow-sm: 0 1px 2px rgb(0 0 0 / .3);
+      --shadow-md: 0 1px 2px rgb(0 0 0 / .3), 0 8px 22px -8px rgb(0 0 0 / .55);
+      --shadow-lg: 0 2px 4px rgb(0 0 0 / .35), 0 18px 40px -12px rgb(0 0 0 / .7);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+  svg { flex: none; }
+
+  /* ---------- Header ---------- */
+  header { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    border-bottom: 1px solid var(--border); }
+  .bar { max-width: 1280px; margin: 0 auto; padding: 14px 20px; display: flex; gap: 14px 18px; align-items: center; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--on-accent);
+    background: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #7a1e00)); box-shadow: var(--shadow-sm); }
+  h1 { font-size: 17px; margin: 0; letter-spacing: -.015em; font-weight: 650; }
+  .stats { display: flex; gap: 6px; flex-wrap: wrap; }
+  .stat { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--border); padding: 3px 9px 3px 8px; border-radius: 999px; }
+  .stat b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .spacer { flex: 1; }
+  .search { position: relative; display: flex; align-items: center; }
+  .search svg { position: absolute; left: 10px; color: var(--faint); pointer-events: none; }
+  .search input { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px;
+    padding: 7px 10px 7px 32px; width: 240px; font: inherit; font-size: 13px; outline: none;
+    transition: border-color .2s, box-shadow .2s, width .3s var(--ease); }
+  .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); width: 280px; }
+  .seg { display: inline-flex; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 2px; position: relative; }
+  .seg button { position: relative; z-index: 1; border: 0; background: none; padding: 5px 11px; font-size: 12.5px; color: var(--muted);
+    border-radius: 8px; cursor: pointer; transition: color .2s; }
+  .seg button[aria-pressed="true"] { color: var(--text); }
+  .seg .thumb { position: absolute; z-index: 0; top: 2px; bottom: 2px; border-radius: 8px; background: var(--surface);
+    box-shadow: var(--shadow-sm); transition: left .3s var(--ease), width .3s var(--ease); }
+  .seg-label { font-size: 12px; color: var(--faint); margin-right: -8px; }
+  .icon-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted); transition: color .15s, background .15s, transform .15s; }
+  .icon-btn:hover { color: var(--text); background: var(--surface-2); }
+  .icon-btn:active { transform: scale(.94); }
+  .spin svg { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Groups ---------- */
+  main { max-width: 1280px; margin: 0 auto; padding: 10px 20px 64px; }
+  .group { margin-top: 18px; animation: fade-up .45s var(--ease) both; }
+  .group-head { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin: 0 -10px;
+    width: calc(100% + 20px); border: 0; background: none; border-radius: 10px; cursor: pointer; text-align: left; transition: background .15s; }
+  .group-head:hover { background: var(--bg-2); }
+  .chev { color: var(--faint); transition: transform .3s var(--ease); }
+  .group.collapsed .chev { transform: rotate(-90deg); }
+  .group-name { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); }
+  .count { font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 0 7px; font-variant-numeric: tabular-nums; }
+  .dots { display: flex; gap: 3px; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--dot); }
+  .group-meta { margin-left: auto; font-size: 12px; color: var(--faint); }
+  .group-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .4s var(--ease), opacity .3s; }
+  .group.collapsed .group-body { grid-template-rows: 0fr; opacity: 0; }
+  .group-inner { overflow: hidden; min-height: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 14px; align-items: start; padding: 8px 0 4px; }
+
+  /* ---------- Cards ---------- */
+  .card { --st: var(--ok); --st-soft: var(--ok-soft);
+    position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); min-width: 0; overflow: hidden;
+    transition: transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s; }
+  .card::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--st); opacity: .85; }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: var(--border-strong); }
+  .card.st-busy { --st: var(--busy); --st-soft: var(--busy-soft); }
+  .card.st-stale { --st: var(--stale); --st-soft: var(--stale-soft); }
+  .card.st-ended { --st: var(--dead); --st-soft: var(--dead-soft); }
+  .card.st-ended .card-main { opacity: .72; }
+  .card.enter { animation: card-in .5s var(--ease) both; animation-delay: calc(min(var(--i, 0), 12) * 40ms); }
+  .card.leaving { animation: card-out .35s var(--ease) forwards; pointer-events: none; }
+  @keyframes card-in { from { opacity: 0; transform: translateY(10px) scale(.985); } }
+  @keyframes card-out { to { opacity: 0; transform: scale(.94); filter: blur(2px); } }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } }
+
+  .card-main { padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 12px; }
+  .card-top { display: flex; gap: 12px; align-items: flex-start; }
+  .app { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex: none;
+    background: var(--st-soft); color: var(--st); position: relative; }
+  .app .pulse { position: absolute; right: -2px; top: -2px; width: 10px; height: 10px; border-radius: 50%; background: var(--st);
+    border: 2px solid var(--surface); }
+  .card.st-busy .pulse::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; background: var(--st);
+    animation: ping 1.4s var(--ease) infinite; }
+  @keyframes ping { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(2.6); opacity: 0; } }
+  .titles { flex: 1; min-width: 0; }
+  .name { font-weight: 650; font-size: 15px; letter-spacing: -.01em; word-break: break-word; line-height: 1.3; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-top: 2px; word-break: break-word; }
+  .x { border: 0; background: transparent; color: var(--faint); cursor: pointer; border-radius: 8px; width: 28px; height: 28px;
+    display: grid; place-items: center; flex: none; transition: background .15s, color .15s, transform .15s; margin: -4px -6px 0 0; }
+  .x:hover { background: var(--danger-soft); color: var(--danger); transform: rotate(90deg); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 999px;
+    background: var(--dead-soft); color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+    border: 1px solid transparent; transition: filter .15s, transform .15s; }
+  .chip.status { background: var(--st-soft); color: var(--st); font-weight: 600; }
+  .chip.status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+  .chip.info { background: var(--info-soft); color: var(--info); }
+  .chip.accent { background: var(--accent-soft); color: var(--accent); }
+  .chip.outline { background: transparent; border-color: var(--border); }
+  .chip.mono { font-family: var(--mono); font-size: 11px; }
+  a.chip { text-decoration: none; }
+  a.chip:hover { filter: brightness(.96) saturate(1.2); transform: translateY(-1px); }
+  .chip-text { overflow: hidden; text-overflow: ellipsis; }
+
+  .block { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .label { color: var(--faint); font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 650; }
+  .ask { margin: 0; word-break: break-word; font-size: 13.5px; }
+  .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .reply { position: relative; padding: 10px 12px 10px 14px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; font-size: 13px; word-break: break-word; cursor: pointer; transition: border-color .2s, background .2s; }
+  .reply::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+  .reply:hover { border-color: var(--border-strong); }
+  .rtext { display: block; }
+  .rtext.clamp { display: -webkit-box; -webkit-line-clamp: 4; }
+
+  details { border-top: 1px dashed var(--border); padding-top: 10px; }
+  details::details-content { height: 0; overflow: hidden; opacity: 0;
+    transition: height .35s var(--ease), opacity .3s, content-visibility .35s allow-discrete; }
+  details[open]::details-content { height: auto; opacity: 1; }
+  summary { cursor: pointer; color: var(--muted); font-size: 12.5px; user-select: none; list-style: none; display: flex; align-items: center; gap: 6px; }
+  summary::-webkit-details-marker { display: none; }
+  summary .chev { transform: rotate(-90deg); }
+  details[open] summary .chev { transform: rotate(0); }
+  summary:hover { color: var(--text); }
+  .more { display: flex; flex-direction: column; gap: 12px; padding-top: 12px; }
+  ul.asks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  ul.asks li { word-break: break-word; font-size: 13px; padding-left: 14px; position: relative; color: var(--muted); }
+  ul.asks li::before { content: ""; position: absolute; left: 3px; top: .62em; width: 5px; height: 5px; border-radius: 50%; background: var(--border-strong); }
+  .files { display: flex; flex-wrap: wrap; gap: 5px; }
+  .file { font-family: var(--mono); font-size: 11px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 1px 7px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .card-foot { display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 16px; border-top: 1px solid var(--border);
+    background: var(--surface-2); }
+  .meta { color: var(--faint); font-size: 12px; display: flex; gap: 4px 12px; flex-wrap: wrap; flex: 1; min-width: 0; }
+  .meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 550; border-radius: 9px; padding: 6px 12px;
+    cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    transition: background .15s, transform .15s, box-shadow .15s, border-color .15s; white-space: nowrap; }
+  .btn:hover { border-color: var(--border-strong); }
+  .btn:active { transform: scale(.96); }
+  .btn.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
+  .btn.primary:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
+  .btn.primary svg { transition: transform .2s var(--ease); }
+  .btn.primary:hover svg { transform: translateX(2px); }
+  .btn.danger { background: var(--danger); border-color: transparent; color: #fff; }
+  .btn:disabled { opacity: .55; cursor: wait; }
+
+  /* Inline close confirmation */
+  .confirm { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; padding: 20px; text-align: center; background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
+  .confirm p { margin: 0; font-weight: 600; }
+  .confirm small { color: var(--muted); display: block; font-weight: 400; margin-top: 2px; }
+  .confirm .row { display: flex; gap: 8px; transform: translateY(6px); transition: transform .25s var(--ease); }
+  .card.confirming .confirm { opacity: 1; visibility: visible; }
+  .card.confirming .confirm .row { transform: none; }
+
+  /* Skeleton + misc */
+  .skeleton { height: 260px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: linear-gradient(100deg, var(--surface) 30%, var(--surface-2) 50%, var(--surface) 70%) 0 0 / 300% 100%;
+    animation: shimmer 1.4s linear infinite; }
+  @keyframes shimmer { to { background-position: -150% 0; } }
+  .empty { color: var(--muted); padding: 64px 0; text-align: center; animation: fade-up .4s var(--ease) both; }
+  #toast { position: fixed; bottom: 20px; left: 50%; z-index: 20; display: flex; align-items: center; gap: 8px; background: var(--text); color: var(--bg);
+    padding: 9px 16px; border-radius: 12px; font-size: 13px; box-shadow: var(--shadow-lg); pointer-events: none;
+    opacity: 0; transform: translate(-50%, 12px) scale(.96); transition: opacity .25s, transform .3s var(--ease); }
+  #toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+  @media (max-width: 720px) {
+    .bar { padding: 12px 16px; } main { padding: 4px 16px 48px; }
+    .search, .search input, .search input:focus { width: 100%; } .spacer { display: none; }
+    .group-meta { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand">
+    <div class="logo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></svg></div>
+    <h1>Claude Sessions</h1>
+  </div>
+  <div class="stats" id="stats"></div>
+  <span class="spacer"></span>
+  <label class="search">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="q" placeholder="Search asks, files, tickets…" aria-label="Filter sessions">
+  </label>
+  <span class="seg-label">Group</span>
+  <div class="seg" id="groupBy" role="group" aria-label="Group by">
+    <span class="thumb"></span>
+    <button data-mode="project">Project</button>
+    <button data-mode="status">Status</button>
+    <button data-mode="app">App</button>
+    <button data-mode="none">None</button>
+  </div>
+  <button class="icon-btn" id="toggleAll" title="Collapse all groups"></button>
+  <button class="icon-btn" id="refresh" title="Refresh">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg>
+  </button>
+</div></header>
+<main id="root"></main>
+<div id="toast" role="status"></div>
+<script>
+const TOKEN = "__TOKEN__";
+const JIRA = "https://wix.atlassian.net/browse/";
+let sessions = [];
+let lastJson = "";
+const seen = new Set();        // pids already rendered (only new cards animate in)
+const confirming = new Set();  // pids showing the close confirmation
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("csd:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("csd:" + k, JSON.stringify(v)); } catch {} },
+};
+let mode = store.get("mode", "project");
+let collapsed = new Set(store.get("collapsed", []));
+
+const ICON = {
+  chev: '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  x: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  arrow: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  resume: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>',
+  terminal: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>',
+  desktop: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2.5"/><path d="M8 20h8M12 16v4"/></svg>',
+  bg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 7.5l2.6 1.5M17.2 15l2.6 1.5M4.2 16.5 6.8 15M17.2 9l2.6-1.5"/><circle cx="12" cy="12" r="3"/></svg>',
+  clock: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  branch: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-6 3-11 7"/></svg>',
+  pr: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M6 7v10M18 17V9a3 3 0 0 0-3-3h-4M13 3l-3 3 3 3"/></svg>',
+  collapse: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 20 5-5 5 5M7 4l5 5 5-5"/></svg>',
+  expand: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></svg>',
+};
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+const ago = ms => {
+  if (!ms) return "—";
+  const s = (Date.now() - ms) / 1000;
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  return Math.floor(s / 86400) + "d ago";
+};
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+const STATUS = {
+  busy:  { label: "Working", color: "var(--busy)", order: 0 },
+  idle:  { label: "Idle", color: "var(--ok)", order: 1 },
+  stale: { label: "Stale", color: "var(--stale)", order: 2 },
+  ended: { label: "Ended", color: "var(--dead)", order: 3 },
+};
+function statusOf(s) {
+  if (!s.alive) return "ended";
+  if (s.status !== "idle") return "busy";
+  return (Date.now() - (s.updatedAt || s.startedAt)) / 864e5 >= 3 ? "stale" : "idle";
+}
+const appOf = s => s.kind === "bg" ? "Background" : s.entrypoint === "claude-desktop" ? "Claude Desktop" : "CLI";
+
+/* ---------- Card ---------- */
+function chips(s, st) {
+  const idleDays = Math.floor((Date.now() - (s.updatedAt || s.startedAt)) / 864e5);
+  const label = st === "busy" ? (s.status === "busy" ? "Working" : s.status) : st === "stale" ? `Idle ${idleDays}d` : STATUS[st].label;
+  const out = [`<span class="chip status">${esc(label)}</span>`];
+  out.push(`<span class="chip ${s.entrypoint === "claude-desktop" ? "info" : "outline"}">${appOf(s)}</span>`);
+  if (s.headless) out.push(`<span class="chip outline" title="Runs inside the Claude daemon with no terminal window of its own.">${s.attachTab ? "attached in Orca" : "headless"}</span>`);
+  else if (s.alive && s.tty) out.push(`<span class="chip outline mono">${esc(s.tty)}</span>`);
+  const branch = s.branch && !["HEAD", "master", "main"].includes(s.branch) ? s.branch : null;
+  if (branch) out.push(`<span class="chip outline mono" title="${esc(branch)}">${ICON.branch}<span class="chip-text">${esc(branch)}</span></span>`);
+  for (const t of s.tickets || [])
+    out.push(`<a class="chip info" target="_blank" rel="noopener" href="${JIRA}${esc(t)}">${esc(t)}</a>`);
+  for (const pr of s.prs || []) {
+    const m = pr.match(/github\.com\/[^/]+\/([^/]+)\/pull\/(\d+)/);
+    out.push(`<a class="chip accent" target="_blank" rel="noopener" href="${esc(pr)}" title="${esc(pr)}">${ICON.pr}<span class="chip-text">${esc(m[1])}#${m[2]}</span></a>`);
+  }
+  return `<div class="chips">${out.join("")}</div>`;
+}
+
+function context(s) {
+  const asks = s.asks || [];
+  const latest = asks[0];
+  const first = s.firstPrompt && s.firstPrompt !== latest ? s.firstPrompt : null;
+  let html = "";
+  if (first) html += `<div class="block"><span class="label">Started with</span><p class="ask clamp" dir="auto">${esc(first)}</p></div>`;
+  if (latest) html += `<div class="block"><span class="label">Latest ask</span><p class="ask clamp" dir="auto">${esc(latest)}</p></div>`;
+  if (s.lastReply) html += `<div class="block"><span class="label">Claude's last reply</span>
+    <div class="reply" title="Click to expand"><span class="rtext clamp" dir="auto">${esc(s.lastReply)}</span></div></div>`;
+  if (!first && !latest && !s.lastReply) html += `<p class="subtitle">No messages yet.</p>`;
+
+  const more = [];
+  if (asks.length > 1) more.push(`<div class="block"><span class="label">Earlier asks</span>
+    <ul class="asks">${asks.slice(1).map(a => `<li dir="auto">${esc(a)}</li>`).join("")}</ul></div>`);
+  if (s.files?.length) more.push(`<div class="block"><span class="label">Files edited</span>
+    <div class="files">${s.files.map(f => `<span class="file" title="${esc(f)}">${esc(f)}</span>`).join("")}</div></div>`);
+  if (s.topTools?.length) more.push(`<div class="block"><span class="label">Tools used</span>
+    <div class="chips">${s.topTools.map(([n, c]) => `<span class="chip outline mono">${esc(n)} ×${c}</span>`).join("")}</div></div>`);
+  if (more.length) {
+    const bits = [plural(s.turns, "ask"), plural(s.toolCalls, "tool call")];
+    if (s.files?.length) bits.push(plural(s.files.length, "file") + " edited");
+    html += `<details><summary>${ICON.chev}${bits.join(" · ")}</summary><div class="more">${more.join("")}</div></details>`;
+  }
+  return html;
+}
+
+function card(s, i) {
+  const st = statusOf(s);
+  const isNew = !seen.has(s.pid);
+  const icon = s.kind === "bg" ? ICON.bg : s.entrypoint === "claude-desktop" ? ICON.desktop : ICON.terminal;
+  const open = !s.alive ? `${ICON.resume}Resume` : s.headless && !s.attachTab ? `Attach${ICON.arrow}` : s.entrypoint === "claude-desktop" ? `Open in Desktop${ICON.arrow}` : `Open${ICON.arrow}`;
+  const subtitle = s.title && s.title !== s.name ? `<div class="subtitle" dir="auto">${esc(s.title)}</div>` : "";
+  return `<article class="card st-${st} ${isNew ? "enter" : ""} ${confirming.has(s.pid) ? "confirming" : ""}" data-pid="${s.pid}" style="--i:${i}">
+    <div class="card-main">
+      <div class="card-top">
+        <div class="app">${icon}<span class="pulse"></span></div>
+        <div class="titles"><div class="name">${esc(s.name)}</div>${subtitle}</div>
+        <button class="x" title="Close session" data-act="ask-close">${ICON.x}</button>
+      </div>
+      ${chips(s, st)}
+      ${context(s)}
+    </div>
+    <footer class="card-foot">
+      <div class="meta">
+        <span title="Last activity">${ICON.clock}${ago(s.updatedAt)}</span>
+        <span>started ${ago(s.startedAt)}</span>
+      </div>
+      <button class="btn primary" data-act="open">${open}</button>
+    </footer>
+    <div class="confirm">
+      <div><p>${s.alive ? "Close this session?" : "Remove this entry?"}</p>
+      <small>${esc(s.name)} · pid ${s.pid}</small></div>
+      <div class="row"><button class="btn" data-act="cancel">Cancel</button>
+      <button class="btn danger" data-act="close">${s.alive ? "Close session" : "Remove"}</button></div>
+    </div>
+  </article>`;
+}
+
+/* ---------- Groups ---------- */
+function groupsFor(list) {
+  const key = { project: s => s.project, status: s => STATUS[statusOf(s)].label, app: appOf, none: () => "All sessions" }[mode];
+  const groups = new Map();
+  for (const s of list) { const k = key(s); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(s); }
+  const latest = items => Math.max(...items.map(s => s.updatedAt || 0));
+  const order = mode === "status"
+    ? (a, b) => Object.values(STATUS).find(x => x.label === a[0]).order - Object.values(STATUS).find(x => x.label === b[0]).order
+    : (a, b) => latest(b[1]) - latest(a[1]);
+  return [...groups].sort(order).map(([k, items]) => [k, items.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))]);
+}
+
+function render() {
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const list = sessions.filter(s => !q || [s.name, s.title, s.project, s.firstPrompt, s.lastReply, s.branch,
+    ...(s.asks || []), ...(s.files || []), ...(s.tickets || []), ...(s.prs || [])]
+    .some(v => (v || "").toLowerCase().includes(q)));
+  // Keep what the viewer expanded across re-renders.
+  const openDetails = new Set([...document.querySelectorAll(".card details[open]")].map(d => d.closest(".card").dataset.pid));
+  const openReplies = new Set([...document.querySelectorAll(".card .rtext:not(.clamp)")].map(r => r.closest(".card").dataset.pid));
+
+  const counts = { busy: 0, idle: 0, stale: 0, ended: 0 };
+  for (const s of sessions) counts[statusOf(s)]++;
+  document.getElementById("stats").innerHTML = Object.entries(counts).filter(([k, n]) => n || k === "idle")
+    .map(([k, n]) => `<span class="stat"><span style="width:7px;height:7px;border-radius:50%;background:${STATUS[k].color}"></span><b>${n}</b> ${STATUS[k].label.toLowerCase()}</span>`).join("");
+
+  const groups = groupsFor(list);
+  let i = 0;
+  document.getElementById("root").innerHTML = groups.length ? groups.map(([k, items]) => {
+    const id = `${mode}:${k}`;
+    const dots = items.map(s => `<i style="--dot:${STATUS[statusOf(s)].color}" title="${esc(s.name)}"></i>`).join("");
+    const head = mode === "none" ? "" : `<button class="group-head" data-group="${esc(id)}" aria-expanded="${!collapsed.has(id)}">
+        ${ICON.chev}<span class="group-name">${esc(k)}</span><span class="count">${items.length}</span>
+        <span class="dots">${dots}</span><span class="group-meta">active ${ago(Math.max(...items.map(s => s.updatedAt || 0)))}</span>
+      </button>`;
+    return `<section class="group ${mode !== "none" && collapsed.has(id) ? "collapsed" : ""}">${head}
+      <div class="group-body"><div class="group-inner"><div class="grid">${items.map(s => card(s, i++)).join("")}</div></div></div></section>`;
+  }).join("") : `<div class="empty">${q ? `No sessions match “${esc(q)}”.` : "No Claude sessions running."}</div>`;
+
+  for (const c of document.querySelectorAll(".card")) {
+    seen.add(Number(c.dataset.pid));
+    if (openDetails.has(c.dataset.pid)) c.querySelector("details")?.setAttribute("open", "");
+    if (openReplies.has(c.dataset.pid)) c.querySelector(".rtext")?.classList.remove("clamp");
+  }
+  syncToggleAll();
+}
+
+function groupIds() { return [...document.querySelectorAll(".group-head")].map(h => h.dataset.group); }
+function syncToggleAll() {
+  const btn = document.getElementById("toggleAll");
+  const ids = groupIds();
+  btn.style.display = ids.length ? "" : "none";
+  const allCollapsed = ids.length && ids.every(id => collapsed.has(id));
+  btn.innerHTML = allCollapsed ? ICON.expand : ICON.collapse;
+  btn.title = allCollapsed ? "Expand all groups" : "Collapse all groups";
+  btn.dataset.next = allCollapsed ? "expand" : "collapse";
+}
+function setCollapsed(id, on) {
+  on ? collapsed.add(id) : collapsed.delete(id);
+  store.set("collapsed", [...collapsed]);
+  const head = [...document.querySelectorAll(".group-head")].find(h => h.dataset.group === id);
+  if (head) { head.closest(".group").classList.toggle("collapsed", on); head.setAttribute("aria-expanded", String(!on)); }
+}
+
+function syncSeg() {
+  const seg = document.getElementById("groupBy");
+  for (const b of seg.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
+  const active = seg.querySelector(`button[data-mode="${mode}"]`);
+  const thumb = seg.querySelector(".thumb");
+  thumb.style.left = active.offsetLeft + "px";
+  thumb.style.width = active.offsetWidth + "px";
+}
+
+/* ---------- Data ---------- */
+async function load(force) {
+  const btn = document.getElementById("refresh");
+  btn.classList.add("spin");
+  try {
+    const json = await (await fetch("/api/sessions")).text();
+    // Re-render only when something changed, so animations don't replay every poll.
+    if (force || json !== lastJson) { lastJson = json; sessions = JSON.parse(json); render(); }
+  } catch (e) {
+    document.getElementById("root").innerHTML = `<div class="empty">Can't reach the dashboard server. Is server.py running?</div>`;
+    lastJson = "";
+  } finally {
+    setTimeout(() => btn.classList.remove("spin"), 400);
+  }
+}
+
+/* ---------- Events ---------- */
+document.getElementById("root").addEventListener("click", async e => {
+  const head = e.target.closest(".group-head");
+  if (head) { setCollapsed(head.dataset.group, !collapsed.has(head.dataset.group)); return syncToggleAll(); }
+  const reply = e.target.closest(".reply");
+  if (reply) return reply.querySelector(".rtext").classList.toggle("clamp");
+  const btn = e.target.closest("button[data-act]");
+  if (!btn) return;
+  const cardEl = btn.closest(".card");
+  const pid = Number(cardEl.dataset.pid);
+  const act = btn.dataset.act;
+  if (act === "ask-close") { confirming.add(pid); return cardEl.classList.add("confirming"); }
+  if (act === "cancel") { confirming.delete(pid); return cardEl.classList.remove("confirming"); }
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/${act}/${pid}`, { method: "POST", headers: { "X-Token": TOKEN } });
+    const body = await r.json();
+    toast(body.message || body.error || "Done");
+    if (act === "close" && r.ok) {
+      confirming.delete(pid);
+      cardEl.classList.add("leaving");
+      await new Promise(res => setTimeout(res, 350));
+    }
+  } catch (err) {
+    toast("Request failed: " + err.message);
+  }
+  btn.disabled = false;
+  if (act === "close") load(true);
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && confirming.size) {
+    confirming.clear();
+    document.querySelectorAll(".card.confirming").forEach(c => c.classList.remove("confirming"));
+  }
+  if (e.key === "/" && document.activeElement.tagName !== "INPUT") { e.preventDefault(); document.getElementById("q").focus(); }
+});
+document.getElementById("groupBy").addEventListener("click", e => {
+  const b = e.target.closest("button[data-mode]");
+  if (!b || b.dataset.mode === mode) return;
+  mode = b.dataset.mode; store.set("mode", mode);
+  syncSeg(); seen.clear(); render();
+});
+document.getElementById("toggleAll").addEventListener("click", e => {
+  const collapse = e.currentTarget.dataset.next === "collapse";
+  for (const id of groupIds()) setCollapsed(id, collapse);
+  syncToggleAll();
+});
+document.getElementById("q").addEventListener("input", render);
+document.getElementById("refresh").addEventListener("click", () => load(true));
+window.addEventListener("resize", syncSeg);
+
+document.getElementById("root").innerHTML = `<div class="grid">${'<div class="skeleton"></div>'.repeat(3)}</div>`;
+syncSeg();
+load();
+setInterval(load, 10000);
+setInterval(() => load(true), 60000); // keep "x ago" labels fresh
+</script>
+</body>
+</html>
