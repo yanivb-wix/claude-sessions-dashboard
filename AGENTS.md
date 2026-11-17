@@ -12,6 +12,9 @@ A local, macOS-only web dashboard for every Claude session running on this machi
 |---|---|
 | `server.py` | Session discovery (`load_sessions`), transcript parsing (`summarize`), Orca/Desktop/terminal integration (`orca_handle`, `open_session`, `launch_in_terminal`), `close_session`, HTTP handler |
 | `index.html` | UI. `server.py` serves it with `__TOKEN__` replaced by the per-run CSRF token |
+| `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` | The repo is also a Claude Code plugin named `sessions-dashboard` (names starting with `claude-` are reserved) and its own one-plugin marketplace |
+| `hooks/register.ts` | Plugin hooks module: registers `/sessions` and answers it by starting `server.py` detached (`nohup … &`) or opening the running one; `/sessions stop` kills the listener on 8765. No DOM or Node APIs here: use `$.process`, `$.clock` and so on |
+| `skills/sessions-dashboard/SKILL.md` | Skill telling Claude how to start/open the dashboard and query `server.load_sessions()` for chat answers |
 | `demo/sessions.json` | Made-up sessions served by `--demo`. Times are `startedAgoMin`/`activeAgoMin`, converted to timestamps at request time |
 | `docs/*.png` | README screenshots, captured from demo mode (see below) |
 | `attach-tabs.json` | Runtime state: `{jobId: orcaTerminalHandle}` for tabs opened by Attach. Git-ignored, never commit it |
@@ -39,6 +42,7 @@ python3 -c "import re;open('/tmp/page.js','w').write(re.search(r'<script>(.*)</s
   shot dashboard-dark  "?group=project" --blink-settings=preferredColorScheme=0
   shot dashboard-status "?group=status"
   ```
+- After touching the plugin files, run `claude plugin validate .` (expect it to pass with warnings about the icon and the root CLAUDE.md). Bump `version` in `plugin.json` when releasing a change, so installed copies pick it up with `claude plugin update`.
 - There is no test suite. Verify by importing `server` and calling its functions, and by loading the page in a browser.
 - **The server must be restarted after editing `server.py`.** `index.html` is re-read on every request, so a page reload is enough for UI changes. The token changes on every restart, so an old open tab gets `403` on actions until it is reloaded.
 - **Do not click Open, Attach or Close on real sessions while testing.** Open steals focus or creates Orca tabs in the user's workspace, and Close kills the user's live sessions. Test the logic by calling the helpers (`orca_handle(s)`, `attach_running(job)` and so on) instead.

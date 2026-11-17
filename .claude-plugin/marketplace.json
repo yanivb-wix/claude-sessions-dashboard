@@ -1,0 +1,14 @@
+{
+  "name": "sessions-dashboard",
+  "owner": {
+    "name": "yanivb-wix"
+  },
+  "plugins": [
+    {
+      "name": "sessions-dashboard",
+      "source": "./",
+      "description": "A local dashboard of every running Claude session: open, attach, resume or close them from one page."
+    }
+  ],
+  "description": "Local dashboard for running Claude sessions"
+}
